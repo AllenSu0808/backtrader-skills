@@ -13,9 +13,11 @@ async page => {
   const failed = [];
 
   for (const entry of navEntries) {
-    const url = new URL(entry.href, baseUrl).toString();
+    const url = entry.href.startsWith('http')
+      ? entry.href
+      : baseUrl.replace(/\/$/, '') + (entry.href.startsWith('/') ? entry.href : '/' + entry.href);
     try {
-      await page.goto(url, { waitUntil: 'networkidle' });
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       const contentHtml = await page.evaluate(() => {
         const contentEl = document.querySelector('.md-content__inner');
         return contentEl ? contentEl.innerHTML : null;
@@ -28,7 +30,7 @@ async page => {
     } catch (error) {
       failed.push({ url, title: entry.text, error: String(error) });
     }
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(500);
   }
 
   return { pages, failed };
