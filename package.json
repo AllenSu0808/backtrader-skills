@@ -1,0 +1,12 @@
+{
+  "name": "backtrader-docs-to-markdown",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test scripts/lib"
+  },
+  "dependencies": {
+    "turndown": "7.2.4"
+  }
+}

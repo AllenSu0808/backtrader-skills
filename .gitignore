@@ -41,5 +41,5 @@ public/css/output.css
 qa.md
 .playwright-mcp/
 .playwright-cli/
-
+.superpowers/
 ecpay-checkout-e2e-workspace/
