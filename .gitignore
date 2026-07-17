@@ -42,4 +42,5 @@ qa.md
 .playwright-mcp/
 .playwright-cli/
 .superpowers/
+raw/
 ecpay-checkout-e2e-workspace/
