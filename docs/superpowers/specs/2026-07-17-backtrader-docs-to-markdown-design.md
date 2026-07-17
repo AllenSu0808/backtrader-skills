@@ -5,7 +5,7 @@
 
 ## 背景與目標
 
-透過 `/playwright-cli` 抓取 [backtrader 官方文件站](https://www.backtrader.com/docu/) 的全部章節頁面，將每個章節轉存為本地 Markdown（`.md`）檔案，並依 [llms.txt](https://pagerank.ing/what-is-llms-txt/) 慣例產出一份根目錄索引檔，方便離線閱讀或提供給其他 LLM 工具使用。
+透過 `/playwright-cli` 抓取 [backtrader 官方文件站](https://www.backtrader.com/docu/) 的全部章節頁面，將每個章節轉存為本地 Markdown（`.md`）檔案，並依 [llms.txt](https://pagerank.ing/what-is-llms-txt/) 慣例在 `docs/` 底下產出一份索引檔，方便離線閱讀或提供給其他 LLM 工具使用。
 
 ## 範圍
 
@@ -16,8 +16,8 @@
 
 ```
 d:/code/backtrader-skills/
-├── llms.txt                     # 索引檔，分類 + 連結 + 一句話摘要
 ├── docs/
+│   ├── llms.txt                  # 索引檔，分類 + 連結 + 一句話摘要
 │   └── <category>/
 │       └── <slug>.md            # 每個章節一個檔案，檔名對應 URL slug
 └── raw/                          # 中繼產物（抓取階段的原始資料）
@@ -36,7 +36,7 @@ d:/code/backtrader-skills/
   ---
   ```
 
-- `llms.txt` 的連結一律指向本地 `.md` 檔案的相對路徑（例如 `docs/quickstart/quickstart.md`），不指向原始網址。
+- `docs/llms.txt` 的連結一律指向本地 `.md` 檔案相對於 `docs/` 的路徑（例如 `<category>/quickstart.md`），不指向原始網址。
 
 ## 架構：三階段管線
 
@@ -46,7 +46,7 @@ playwright-cli run-code        playwright-cli run-code              node convert
 擷取左側導覽的                  依分類批次 goto 每頁，                讀 raw/*.json
 {title, url, category} 清單    擷取內容區塊 outerHTML，              → turndown 轉 Markdown
 → raw/nav.json                 寫出 raw/<category>.json             → 寫 docs/<category>/<slug>.md
-                                                                      → 產出 llms.txt 索引
+                                                                      → 產出 docs/llms.txt 索引
 ```
 
 階段 1、2 只做抓取（透過 playwright-cli 操作瀏覽器），階段 3 是純離線的 Node 腳本 —— 兩者責任分離，轉換規則可以反覆調整、除錯，不需要重跑瀏覽器。
@@ -58,7 +58,7 @@ playwright-cli run-code        playwright-cli run-code              node convert
 | `discover-nav.js`（透過 `playwright-cli run-code` 執行） | 開啟 `/docu/`，擷取側邊導覽的所有連結與分類階層，輸出 `raw/nav.json` | playwright-cli |
 | `crawl.js`（透過 `playwright-cli run-code` 執行，依 `nav.json` 分類分批呼叫） | 對每個分類的頁面清單逐一 `page.goto`，擷取內容區塊 HTML + 頁面標題，輸出 `raw/<category>.json` | playwright-cli、`nav.json` |
 | `convert.mjs`（本地 Node 腳本） | 讀所有 `raw/*.json`，用 `turndown` 套件轉 Markdown，加 YAML frontmatter，依分類寫入 `docs/<category>/<slug>.md` | Node.js、`turndown` |
-| `build-llms-txt.mjs`（本地 Node 腳本） | 讀轉換後的 `docs/` 結構與每頁摘要（取內容第一段），產出根目錄 `llms.txt` | 前一步輸出 |
+| `build-llms-txt.mjs`（本地 Node 腳本） | 讀轉換後的 `docs/` 結構與每頁摘要（取內容第一段），產出 `docs/llms.txt` | 前一步輸出 |
 
 此工具為一次性使用，不需要考慮排程重跑或增量更新的機制。
 
@@ -67,7 +67,7 @@ playwright-cli run-code        playwright-cli run-code              node convert
 1. `nav.json`：分類 → 頁面清單（`{title, url, category}`）
 2. `raw/<category>.json`：每個分類的頁面內容（`{url, title, contentHtml}`）
 3. `docs/<category>/<slug>.md`：轉換後含 frontmatter 的 Markdown 內容
-4. `llms.txt`：分類標題 + `[標題](docs/<category>/<slug>.md): 摘要` 的清單
+4. `docs/llms.txt`：分類標題 + `[標題](<category>/<slug>.md): 摘要` 的清單
 
 ## 錯誤處理
 
@@ -80,7 +80,7 @@ playwright-cli run-code        playwright-cli run-code              node convert
 
 - **抓取完整性**：比對 `nav.json` 頁面數與 `docs/` 底下產出的 `.md` 檔案數是否一致，並檢查 `_failed.json` 是否為空。
 - **抽樣品質檢查**：轉換完成後隨機挑 3~5 篇（至少各一篇含程式碼區塊、含表格）人工比對原網頁與產出 `.md`，確認程式碼區塊、標題階層、連結未跑掉。
-- **llms.txt 連結有效性**：跑一次簡單檢查腳本，確認 `llms.txt` 內每個連結都對應到實際存在的本地檔案。
+- **llms.txt 連結有效性**：跑一次簡單檢查腳本，確認 `docs/llms.txt` 內每個連結都對應到實際存在的本地檔案。
 
 ## 未決定/待實作階段確認事項
 
