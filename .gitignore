@@ -44,3 +44,5 @@ qa.md
 .superpowers/
 raw/
 ecpay-checkout-e2e-workspace/
+.claude/
+.agents/
